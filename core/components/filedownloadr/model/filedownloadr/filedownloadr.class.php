@@ -127,7 +127,7 @@ class FileDownloadR {
             'assetsUrl' => $assetsUrl,
             'encoding' => 'utf-8',
             'imgTypes' => 'fdimages'
-                ), $config);
+        ), $config);
 
         $tablePrefix = $this->modx->getOption('filedownloadr.table_prefix', null, $this->modx->config[modX::OPT_TABLE_PREFIX] . 'fd_');
         $this->modx->addPackage('filedownloadr', $this->config['modelPath'], $tablePrefix);
@@ -607,8 +607,8 @@ class FileDownloadR {
             // Replace non-viewable bytes with '.'
             if (ord($data[$i]) >= 32) {
                 $ascii .= ($htmloutput === true) ?
-                        htmlentities($data[$i]) :
-                        $data[$i];
+                    htmlentities($data[$i]) :
+                    $data[$i];
             } else {
                 $ascii .= '.';
             }
@@ -638,8 +638,8 @@ class FileDownloadR {
 
         // Finish dump
         $dump .= $htmloutput === true ?
-                '</pre>' :
-                '';
+            '</pre>' :
+            '';
         $dump .= "\n";
 
         // Output method
@@ -777,7 +777,7 @@ class FileDownloadR {
 
         $fdlPath = $this->modx->getObject('fdPaths', array(
             'ctx' => $file['ctx'],
-            'media_source_id' => $this->config['mediaSourceId'],
+            //'media_source_id' => $this->config['mediaSourceId'],
             'filename' => $filename,
             'hash' => $this->_setHashedParam($file['ctx'], $file['filename'])
         ));
@@ -788,7 +788,7 @@ class FileDownloadR {
             $fdlPath = $this->modx->newObject('fdPaths');
             $fdlPath->fromArray(array(
                 'ctx' => $file['ctx'],
-                'media_source_id' => $this->config['mediaSourceId'],
+                // 'media_source_id' => $this->config['mediaSourceId'],
                 'filename' => $filename,
                 'count' => 0,
                 'hash' => $this->_setHashedParam($file['ctx'], $file['filename'])
@@ -1275,6 +1275,22 @@ class FileDownloadR {
 
         $unixDate = filemtime($fileRealPath);
         $date = date($this->config['dateFormat'], $unixDate);
+
+        // sorry for this. But I need quick compatability with old version of FileDownloadR
+        $filePathId = $checkedDb['id'];
+        $sql = "
+            SELECT c.count FROM `modx_fd_count` c
+            JOIN `modx_fd_paths` p on c.filename = p.filename
+            WHERE p.id = $filePathId";
+
+        $res = $this->modx->query($sql);
+
+        if ($res) {
+            while ($countObj = $res->fetch(PDO::FETCH_OBJ)) {
+                break;
+            }
+        }
+
         $info = array(
             'ctx' => $checkedDb['ctx'],
             'fullPath' => $fileRealPath,
@@ -1288,7 +1304,7 @@ class FileDownloadR {
             'unixdate' => $unixDate,
             'date' => $date,
             'image' => $this->config['imgLocat'] . $imgType,
-            'count' => (int) $this->modx->getCount('fdDownloads', array('path_id' => $checkedDb['id'])),
+            'count' => $countObj->count + (int) $this->modx->getCount('fdDownloads', array('path_id' => $checkedDb['id'])),
             'link' => $link['url'], // fallback
             'url' => $link['url'],
             'hash' => $checkedDb['hash']
